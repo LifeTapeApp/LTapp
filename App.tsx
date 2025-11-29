@@ -94,6 +94,7 @@ const AppThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   </InternalThemeContext.Provider>
 );
 
+
 // -----------------------------
 // Fonts to load (ensure files exist in ./assets/fonts)
 const loadFonts = () =>
