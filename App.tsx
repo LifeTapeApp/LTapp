@@ -31,6 +31,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { Ionicons } from '@expo/vector-icons';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import Constants from 'expo-constants';
 import { supabase } from "./supabase";
 import {
   colors,
