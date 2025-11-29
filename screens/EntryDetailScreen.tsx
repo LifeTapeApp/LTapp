@@ -25,7 +25,9 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio, AVPlaybackStatus } from 'expo-av';
 import * as Haptics from 'expo-haptics';
-import { useTheme, useAppStateStore, RootStackParamList } from '../App';
+import { useTheme } from "../theme/theme";
+import { useAppStateStore } from "../stores/appStateStore";
+import { RootStackParamList } from "../types/navigation";
 import {
 colors,
 typography,
