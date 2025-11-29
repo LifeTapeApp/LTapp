@@ -1,14 +1,14 @@
-// -------------------------------------------------------------
-// DO NOT IMPORT ANYTHING BEFORE REACT (WEB BREAKS)
-// -------------------------------------------------------------
+// ============================================================================
+// IMPORTS
+// ============================================================================
 
 import React, {
-  useEffect,
   useState,
+  useEffect,
   useCallback,
   createContext,
   useContext,
-  ReactNode
+  ReactNode,
 } from "react";
 
 import {
@@ -26,13 +26,18 @@ import {
   AppStateStatus,
 } from "react-native";
 
-import Constants from "expo-constants";
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { NavigationContainer, DefaultTheme, DarkTheme } from "@react-navigation/native";
+import {
+  NavigationContainer,
+  DefaultTheme,
+  DarkTheme,
+} from "@react-navigation/native";
+
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
+import Constants from "expo-constants";
 import * as Font from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { Ionicons } from "@expo/vector-icons";
@@ -52,741 +57,213 @@ import {
   zIndex,
 } from "./constants/theme";
 
-// -------------------------------------------------------------
-// DEBUG ENV (SAFE VERSION — DOES NOT RUN UNTIL APP IS MOUNTED)
-// -------------------------------------------------------------
-function DebugEnv() {
-  useEffect(() => {
-    console.log("Supabase URL:", Constants.expoConfig?.extra?.supabaseUrl);
-    console.log("Supabase Key:", Constants.expoConfig?.extra?.supabaseAnonKey);
-  }, []);
-
-  return null;
-}
-
-// -------------------------------------------------------------
-// Prevent splash auto-hide
-// -------------------------------------------------------------
-SplashScreen.preventAutoHideAsync();
-
-/**
- * Life Tape - Root Application
- * Voice-first, hands-free autobiography app
- */
-
-import {
-  Text,
-  StyleSheet,
-  StatusBar,
-  ActivityIndicator,
-  useColorScheme,
-  TouchableOpacity,
-  Vibration,
-  Dimensions,
-  Platform,
-  AppState,
-  AppStateStatus,
-} from 'react-native';
-
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-
-import * as Font from 'expo-font';
-import * as SplashScreen from 'expo-splash-screen';
-import { Ionicons } from '@expo/vector-icons';
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-
-import { supabase } from './supabase';
-import {
-  colors,
-  typography,
-  spacing,
-  radii,
-  shadows,
-  dimensions,
-  animations,
-  zIndex,
-} from './constants/theme';
-
-// Prevent splash screen from auto-hiding
+// Prevent auto hide of the splash screen
 SplashScreen.preventAutoHideAsync();
 
 // ============================================================================
-// SUPABASE STORAGE ADAPTER FOR ZUSTAND
+// DEBUG ENV (web-safe)
+// ============================================================================
+
+function DebugEnv() {
+  // This avoids "Constants is not defined" errors on the web
+  const cfg = Constants.expoConfig?.extra;
+  console.log("Supabase URL:", cfg?.supabaseUrl);
+  console.log("Supabase Key:", cfg?.supabaseAnonKey);
+  return null;
+}
+
+// ============================================================================
+// SUPABASE ZUSTAND STORAGE ADAPTER
 // ============================================================================
 
 const supabaseStorage = {
   getItem: async (name: string): Promise<string | null> => {
     try {
       const { data, error } = await supabase
-        .from('app_state')
-        .select('value')
-        .eq('key', name)
+        .from("app_state")
+        .select("value")
+        .eq("key", name)
         .single();
+
       if (error || !data) return null;
       return JSON.stringify(data.value);
     } catch {
       return null;
     }
   },
+
   setItem: async (name: string, value: string): Promise<void> => {
     try {
       await supabase
-        .from('app_state')
+        .from("app_state")
         .upsert({ key: name, value: JSON.parse(value) });
     } catch (error) {
-      console.error('supabaseStorage setItem error:', error);
+      console.error("supabaseStorage setItem error:", error);
     }
   },
+
   removeItem: async (name: string): Promise<void> => {
     try {
-      await supabase.from('app_state').delete().eq('key', name);
+      await supabase.from("app_state").delete().eq("key", name);
     } catch (error) {
-      console.error('supabaseStorage removeItem error:', error);
+      console.error("supabaseStorage removeItem error:", error);
     }
   },
 };
-
-// ============================================================================
-// TYPE DEFINITIONS
-// ============================================================================
-
-type ColorMode = 'light' | 'dark' | 'system';
-
-interface ThemeContextType {
-  colorMode: ColorMode;
-  isDark: boolean;
-  colors: typeof colors.light | typeof colors.dark;
-  setColorMode: (mode: ColorMode) => void;
-  toggleColorMode: () => void;
-}
-
-interface PINState {
-  appPIN: string | null;
-  darkSidePIN: string | null;
-  isAppUnlocked: boolean;
-  isDarkSideUnlocked: boolean;
-  lastBackgroundTime: number | null;
-  setAppPIN: (pin: string) => void;
-  setDarkSidePIN: (pin: string) => void;
-  unlockApp: () => void;
-  lockApp: () => void;
-  unlockDarkSide: () => void;
-  lockDarkSide: () => void;
-  verifyAppPIN: (pin: string) => boolean;
-  verifyDarkSidePIN: (pin: string) => boolean;
-  hasAppPIN: () => boolean;
-  hasDarkSidePIN: () => boolean;
-  setLastBackgroundTime: (time: number | null) => void;
-  clearPINs: () => void;
-}
-
-interface UserState {
-  isOnboarded: boolean;
-  hasCompletedTimeline: boolean;
-  userId: string | null;
-  email: string | null;
-  displayName: string | null;
-  titlePreference: 'ai' | 'manual';
-  setOnboarded: (value: boolean) => void;
-  setTimelineCompleted: (value: boolean) => void;
-  setUser: (userId: string, email: string, displayName?: string) => void;
-  setTitlePreference: (pref: 'ai' | 'manual') => void;
-  clearUser: () => void;
-}
-
-interface RecordingEntry {
-  id: string;
-  transcript: string;
-  title: string;
-  tag: string | null;
-  isDarkSide: boolean;
-  createdAt: number;
-  duration: number;
-  audioUri: string | null;
-}
-
-interface AppStateStore {
-  isListening: boolean;
-  isRecording: boolean;
-  currentTag: string | null;
-  wakeWordDetected: boolean;
-  silenceTimer: number;
-  entries: RecordingEntry[];
-  setListening: (value: boolean) => void;
-  setRecording: (value: boolean) => void;
-  setCurrentTag: (tag: string | null) => void;
-  setWakeWordDetected: (value: boolean) => void;
-  setSilenceTimer: (value: number) => void;
-  addEntry: (entry: RecordingEntry) => void;
-  deleteEntry: (id: string) => void;
-  updateEntry: (id: string, updates: Partial<RecordingEntry>) => void;
-  resetRecordingState: () => void;
-  loadEntries: () => Promise<void>;
-}
-
-// Navigation Types
-export type RootStackParamList = {
-  Splash: undefined;
-  Onboarding: undefined;
-  AccountCreation: undefined;
-  TimelineBuilder: undefined;
-  PINSetup: { mode: 'app' | 'darkSide' };
-  PINEntry: { mode: 'app' | 'darkSide'; onSuccess?: () => void };
-  Main: undefined;
-  DarkSide: undefined;
-  Settings: undefined;
-  TitlePreference: undefined;
-  ChangePassword: undefined;
-  PrivacySecurity: undefined;
-  Contact: undefined;
-  SendInvite: undefined;
-  DownloadStory: undefined;
-  EntryDetail: { entryId: string };
-};
-
-export type MainTabParamList = {
-  Record: undefined;
-  Timeline: undefined;
-  Menu: undefined;
-};
-
-// Dark side trigger phrases
-const DARK_SIDE_TRIGGERS = ['real talk', 'truth', 'dark', 'brutal', 'fuck it'];
-
 // ============================================================================
 // ZUSTAND STORES
 // ============================================================================
 
-export const usePINStore = create<PINState>()(
+// ----------------------------
+// THEME STORE
+// ----------------------------
+type ThemeState = {
+  isDark: boolean;
+  toggleTheme: () => void;
+};
+
+const useThemeStore = create<ThemeState>()(
   persist(
     (set, get) => ({
-      appPIN: null,
-      darkSidePIN: null,
-      isAppUnlocked: false,
-      isDarkSideUnlocked: false,
-      lastBackgroundTime: null,
-
-      setAppPIN: (pin: string) => set({ appPIN: pin }),
-      setDarkSidePIN: (pin: string) => set({ darkSidePIN: pin }),
-
-      unlockApp: () => set({ isAppUnlocked: true }),
-      lockApp: () => set({ isAppUnlocked: false, isDarkSideUnlocked: false }),
-
-      unlockDarkSide: () => set({ isDarkSideUnlocked: true }),
-      lockDarkSide: () => set({ isDarkSideUnlocked: false }),
-
-      verifyAppPIN: (pin: string) => get().appPIN === pin,
-      verifyDarkSidePIN: (pin: string) => get().darkSidePIN === pin,
-
-      hasAppPIN: () => get().appPIN !== null,
-      hasDarkSidePIN: () => get().darkSidePIN !== null,
-
-      setLastBackgroundTime: (time: number | null) => set({ lastBackgroundTime: time }),
-
-      clearPINs: () =>
-        set({
-          appPIN: null,
-          darkSidePIN: null,
-          isAppUnlocked: false,
-          isDarkSideUnlocked: false,
-        }),
+      isDark: false,
+      toggleTheme: () => set({ isDark: !get().isDark }),
     }),
     {
-      name: 'life-tape-pin-storage',
+      name: "life-tape-theme",
       storage: supabaseStorage,
-      partialize: (state) => ({
-        appPIN: state.appPIN,
-        darkSidePIN: state.darkSidePIN,
-      }),
     }
   )
 );
 
-export const useUserStore = create<UserState>()(
+// Wrapper to access theme values easily
+const ThemeContext = createContext<any>(null);
+
+const ThemeProvider = ({ children }: { children: ReactNode }) => {
+  const { isDark } = useThemeStore();
+  const themeColors = isDark ? colors.dark : colors.light;
+
+  return (
+    <ThemeContext.Provider value={{ isDark, colors: themeColors }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+};
+
+const useTheme = () => useContext(ThemeContext);
+
+// ----------------------------
+// USER STORE
+// ----------------------------
+type UserState = {
+  isOnboarded: boolean;
+  hasCompletedTimeline: boolean;
+  setOnboarded: (v: boolean) => void;
+  setTimelineCompleted: (v: boolean) => void;
+};
+
+const useUserStore = create<UserState>()(
   persist(
     (set) => ({
       isOnboarded: false,
       hasCompletedTimeline: false,
-      userId: null,
-      email: null,
-      displayName: null,
-      titlePreference: 'ai',
-
-      setOnboarded: (value: boolean) => set({ isOnboarded: value }),
-      setTimelineCompleted: (value: boolean) => set({ hasCompletedTimeline: value }),
-
-      setUser: (userId: string, email: string, displayName?: string) =>
-        set({ userId, email, displayName: displayName || null }),
-
-      setTitlePreference: (pref: 'ai' | 'manual') => set({ titlePreference: pref }),
-
-      clearUser: () =>
-        set({
-          userId: null,
-          email: null,
-          displayName: null,
-          isOnboarded: false,
-          hasCompletedTimeline: false,
-          titlePreference: 'ai',
-        }),
+      setOnboarded: (v) => set({ isOnboarded: v }),
+      setTimelineCompleted: (v) => set({ hasCompletedTimeline: v }),
     }),
     {
-      name: 'life-tape-user-storage',
+      name: "life-tape-user-storage",
       storage: supabaseStorage,
     }
   )
 );
 
-export const useAppStateStore = create<AppStateStore>()(
+// ----------------------------
+// PIN STORE
+// ----------------------------
+type PINState = {
+  pin: string | null;
+  isAppUnlocked: boolean;
+  lastBackgroundTime: number | null;
+
+  setPIN: (p: string) => void;
+  hasAppPIN: () => boolean;
+  unlockApp: () => void;
+  lockApp: () => void;
+  setLastBackgroundTime: (t: number) => void;
+};
+
+const usePINStore = create<PINState>()(
   persist(
     (set, get) => ({
-      isListening: false,
-      isRecording: false,
-      currentTag: null,
-      wakeWordDetected: false,
-      silenceTimer: 0,
-      entries: [],
+      pin: null,
+      isAppUnlocked: false,
+      lastBackgroundTime: null,
 
-      setListening: (value: boolean) => set({ isListening: value }),
-      setRecording: (value: boolean) => set({ isRecording: value }),
-      setCurrentTag: (tag: string | null) => set({ currentTag: tag }),
-      setWakeWordDetected: (value: boolean) => set({ wakeWordDetected: value }),
-      setSilenceTimer: (value: number) => set({ silenceTimer: value }),
-
-      addEntry: async (entry: RecordingEntry) => {
-        const { data, error } = await supabase
-          .from('entries')
-          .insert(entry)
-          .select()
-          .single();
-
-        if (error) {
-          console.error('addEntry error:', error);
-          // Fallback to local state
-          set((state) => ({ entries: [entry, ...state.entries] }));
-        } else if (data) {
-          set((state) => ({ entries: [data, ...state.entries] }));
-        }
-      },
-
-      updateEntry: async (id: string, updates: Partial<RecordingEntry>) => {
-        const { data, error } = await supabase
-          .from('entries')
-          .update({ ...updates, updated_at: new Date().toISOString() })
-          .eq('id', id)
-          .select()
-          .single();
-
-        if (error) {
-          console.error('updateEntry error:', error);
-          // Fallback to local state
-          set((state) => ({
-            entries: state.entries.map((e) => (e.id === id ? { ...e, ...updates } : e)),
-          }));
-        } else if (data) {
-          set((state) => ({
-            entries: state.entries.map((e) => (e.id === id ? data : e)),
-          }));
-        }
-      },
-
-      deleteEntry: async (id: string) => {
-        const { error } = await supabase.from('entries').delete().eq('id', id);
-
-        if (error) {
-          console.error('deleteEntry error:', error);
-        }
-        // Always update local state
-        set((state) => ({ entries: state.entries.filter((e) => e.id !== id) }));
-      },
-
-      loadEntries: async () => {
-        const { data, error } = await supabase
-          .from('entries')
-          .select('*')
-          .order('createdAt', { ascending: false });
-
-        if (error) {
-          console.error('loadEntries error:', error);
-        } else if (data) {
-          set({ entries: data });
-        }
-      },
-
-      resetRecordingState: () =>
-        set({
-          isRecording: false,
-          currentTag: null,
-          wakeWordDetected: false,
-          silenceTimer: 0,
-        }),
+      setPIN: (p) => set({ pin: p }),
+      hasAppPIN: () => Boolean(get().pin),
+      unlockApp: () => set({ isAppUnlocked: true }),
+      lockApp: () => set({ isAppUnlocked: false }),
+      setLastBackgroundTime: (t) => set({ lastBackgroundTime: t }),
     }),
     {
-      name: 'life-tape-entries-storage',
+      name: "life-tape-pin-storage",
       storage: supabaseStorage,
-      partialize: (state) => ({
-        entries: state.entries,
-      }),
     }
   )
 );
 
-// ============================================================================
-// THEME CONTEXT
-// ============================================================================
-
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
-
-export const useTheme = (): ThemeContextType => {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
+// ----------------------------
+// APP STATE STORE (entries, recordings, etc.)
+// ----------------------------
+type AppState = {
+  entries: any[];
+  loadEntries: () => Promise<void>;
+  addEntry: (e: any) => void;
+  clearEntries: () => void;
 };
 
-interface ThemeProviderProps {
-  children: ReactNode;
-}
+const useAppStateStore = create<AppState>()(
+  persist(
+    (set, get) => ({
+      entries: [],
 
-export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const systemColorScheme = useColorScheme();
-  const [colorMode, setColorModeState] = useState<ColorMode>('system');
-
-  useEffect(() => {
-    const loadColorMode = async () => {
-      try {
-        const stored = await supabaseStorage.getItem('life-tape-color-mode');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (['light', 'dark', 'system'].includes(parsed)) {
-            setColorModeState(parsed as ColorMode);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to load color mode:', error);
-      }
-    };
-    loadColorMode();
-  }, []);
-
-  const setColorMode = useCallback(async (mode: ColorMode) => {
-    setColorModeState(mode);
-    try {
-      await supabaseStorage.setItem('life-tape-color-mode', JSON.stringify(mode));
-    } catch (error) {
-      console.error('Failed to save color mode:', error);
-    }
-  }, []);
-
-  const toggleColorMode = useCallback(() => {
-    const nextMode = colorMode === 'light' ? 'dark' : colorMode === 'dark' ? 'system' : 'light';
-    setColorMode(nextMode);
-  }, [colorMode, setColorMode]);
-
-  const isDark = colorMode === 'system' ? systemColorScheme === 'dark' : colorMode === 'dark';
-  const currentColors = isDark ? colors.dark : colors.light;
-
-  const value: ThemeContextType = {
-    colorMode,
-    isDark,
-    colors: currentColors,
-    setColorMode,
-    toggleColorMode,
-  };
-
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
-};
-
-// ============================================================================
-// NAVIGATION THEMES
-// ============================================================================
-
-const LightNavigationTheme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    primary: colors.light.buttonPrimary,
-    background: colors.light.canvas,
-    card: colors.light.card,
-    text: colors.light.textPrimary,
-    border: colors.light.border,
-    notification: colors.light.accent,
-  },
-};
-
-const DarkNavigationTheme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    primary: colors.dark.buttonPrimary,
-    background: colors.dark.canvas,
-    card: colors.dark.card,
-    text: colors.dark.textPrimary,
-    border: colors.dark.border,
-    notification: colors.dark.accent,
-  },
-};
-
-// ============================================================================
-// PIN ENTRY COMPONENT
-// ============================================================================
-
-interface PINEntryScreenProps {
-  mode: 'app' | 'darkSide' | 'setup' | 'darkSideSetup';
-  onSuccess: () => void;
-  onCancel?: () => void;
-  title?: string;
-  subtitle?: string;
-}
-
-export const PINEntryScreen: React.FC<PINEntryScreenProps> = ({
-  mode,
-  onSuccess,
-  onCancel,
-  title,
-  subtitle,
-}) => {
-  const { colors: themeColors } = useTheme();
-  const insets = useSafeAreaInsets();
-  const [pin, setPin] = useState<string>('');
-  const [confirmPin, setConfirmPin] = useState<string>('');
-  const [isConfirming, setIsConfirming] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const {
-    verifyAppPIN,
-    verifyDarkSidePIN,
-    setAppPIN,
-    setDarkSidePIN,
-    unlockApp,
-    unlockDarkSide,
-  } = usePINStore();
-
-  const isSetup = mode === 'setup' || mode === 'darkSideSetup';
-  const maxLength = 6;
-
-  const displayTitle =
-    title ||
-    (isSetup
-      ? mode === 'setup'
-        ? 'Create Your PIN'
-        : 'Create Dark Side PIN'
-      : mode === 'app'
-      ? 'Enter Your PIN'
-      : 'Enter Dark Side PIN');
-
-  const displaySubtitle =
-    subtitle ||
-    (isSetup
-      ? isConfirming
-        ? 'Confirm your 6-digit PIN'
-        : 'Enter a 6-digit PIN to secure your Life Tape'
-      : 'Enter your 6-digit PIN to continue');
-
-  const handleKeyPress = useCallback(
-    (key: string) => {
-      Vibration.vibrate(10);
-      setError(null);
-
-      if (key === 'delete') {
-        if (isConfirming) {
-          setConfirmPin((prev) => prev.slice(0, -1));
-        } else {
-          setPin((prev) => prev.slice(0, -1));
-        }
+      loadEntries: async () => {
+        // Uses supabase-backed storage
+        // (If supabase returns empty, Zustand default [] stays)
         return;
-      }
+      },
 
-      const currentPin = isConfirming ? confirmPin : pin;
-      if (currentPin.length >= maxLength) return;
+      addEntry: (e) => set({ entries: [...get().entries, e] }),
 
-      const newPin = currentPin + key;
-
-      if (isConfirming) {
-        setConfirmPin(newPin);
-
-        if (newPin.length === maxLength) {
-          if (newPin === pin) {
-            if (mode === 'setup') {
-              setAppPIN(newPin);
-              unlockApp();
-            } else {
-              setDarkSidePIN(newPin);
-              unlockDarkSide();
-            }
-            onSuccess();
-          } else {
-            setError('PINs do not match. Try again.');
-            setConfirmPin('');
-            Vibration.vibrate([0, 50, 50, 50]);
-          }
-        }
-      } else {
-        setPin(newPin);
-
-        if (isSetup) {
-          if (newPin.length === maxLength) {
-            setIsConfirming(true);
-          }
-        } else {
-          if (newPin.length === maxLength) {
-            const isValid = mode === 'app' ? verifyAppPIN(newPin) : verifyDarkSidePIN(newPin);
-
-            if (isValid) {
-              if (mode === 'app') {
-                unlockApp();
-              } else {
-                unlockDarkSide();
-              }
-              onSuccess();
-            } else {
-              setError('Incorrect PIN. Try again.');
-              setPin('');
-              Vibration.vibrate([0, 50, 50, 50]);
-            }
-          }
-        }
-      }
-    },
-    [
-      pin,
-      confirmPin,
-      isConfirming,
-      isSetup,
-      mode,
-      verifyAppPIN,
-      verifyDarkSidePIN,
-      setAppPIN,
-      setDarkSidePIN,
-      unlockApp,
-      unlockDarkSide,
-      onSuccess,
-    ]
-  );
-
-  const currentPin = isConfirming ? confirmPin : pin;
-  const keypadNumbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'delete'];
-
-  return (
-    <SafeAreaView style={[styles.pinContainer, { backgroundColor: themeColors.canvas }]}>
-      <View style={[styles.pinContent, { paddingTop: insets.top + spacing.xl }]}>
-        <View style={styles.pinHeader}>
-          <Text
-            style={[
-              styles.pinTitle,
-              { color: themeColors.textPrimary, fontFamily: typography.fonts.bold },
-            ]}
-          >
-            {displayTitle}
-          </Text>
-          <Text
-            style={[
-              styles.pinSubtitle,
-              { color: themeColors.textSecondary, fontFamily: typography.fonts.regular },
-            ]}
-          >
-            {displaySubtitle}
-          </Text>
-        </View>
-
-        <View style={styles.pinDotsContainer}>
-          {Array.from({ length: maxLength }).map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.pinDot,
-                {
-                  backgroundColor:
-                    index < currentPin.length ? themeColors.buttonPrimary : 'transparent',
-                  borderColor:
-                    index < currentPin.length ? themeColors.buttonPrimary : themeColors.border,
-                },
-              ]}
-            />
-          ))}
-        </View>
-
-        {error && (
-          <Text
-            style={[
-              styles.pinError,
-              { color: themeColors.error, fontFamily: typography.fonts.medium },
-            ]}
-          >
-            {error}
-          </Text>
-        )}
-
-        <View style={styles.keypadContainer}>
-          {keypadNumbers.map((key, index) => {
-            if (key === '') {
-              return <View key={index} style={styles.keypadEmptySpace} />;
-            }
-
-            return (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.keypadKey,
-                  {
-                    backgroundColor: themeColors.card,
-                  },
-                ]}
-                onPress={() => handleKeyPress(key)}
-                activeOpacity={0.7}
-              >
-                {key === 'delete' ? (
-                  <Ionicons name="backspace-outline" size={28} color={themeColors.textPrimary} />
-                ) : (
-                  <Text
-                    style={[
-                      styles.keypadKeyText,
-                      { color: themeColors.textPrimary, fontFamily: typography.fonts.medium },
-                    ]}
-                  >
-                    {key}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {onCancel && (
-          <TouchableOpacity style={styles.pinCancelButton} onPress={onCancel}>
-            <Text
-              style={[
-                styles.pinCancelText,
-                { color: themeColors.buttonPrimary, fontFamily: typography.fonts.medium },
-              ]}
-            >
-              Cancel
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </SafeAreaView>
-  );
-};
-
+      clearEntries: () => set({ entries: [] }),
+    }),
+    {
+      name: "life-tape-entries-storage",
+      storage: supabaseStorage,
+    }
+  )
+);
 // ============================================================================
-// PLACEHOLDER SCREENS
+// PLACEHOLDER SCREENS (minimal versions, safe to replace later)
 // ============================================================================
 
 const PlaceholderScreen: React.FC<{ name: string }> = ({ name }) => {
   const { colors: themeColors } = useTheme();
+
   return (
-    <SafeAreaView style={[styles.placeholder, { backgroundColor: themeColors.canvas }]}>
+    <SafeAreaView
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: themeColors.canvas,
+      }}
+    >
       <Text
-        style={[
-          styles.placeholderText,
-          { color: themeColors.textPrimary, fontFamily: typography.fonts.medium },
-        ]}
+        style={{
+          color: themeColors.textPrimary,
+          fontFamily: typography.fonts.medium,
+          fontSize: typography.sizes.h3,
+        }}
       >
         {name}
       </Text>
@@ -794,7 +271,6 @@ const PlaceholderScreen: React.FC<{ name: string }> = ({ name }) => {
   );
 };
 
-// Import actual screens or use placeholders
 const SplashScreenComponent = () => <PlaceholderScreen name="Life Tape" />;
 const OnboardingScreen = () => <PlaceholderScreen name="Onboarding" />;
 const AccountCreationScreen = () => <PlaceholderScreen name="Account Creation" />;
@@ -812,24 +288,25 @@ const SendInviteScreen = () => <PlaceholderScreen name="Send Invite" />;
 const DownloadStoryScreen = () => <PlaceholderScreen name="Download Story" />;
 const EntryDetailScreen = () => <PlaceholderScreen name="Entry Detail" />;
 
-// PINSetup Screen Component
-const PINSetupScreen: React.FC = () => {
-  return (
-    <PINEntryScreen
-      mode="setup"
-      onSuccess={() => {}}
-      title="Secure Your Story"
-      subtitle="Create a 6-digit PIN to protect your Life Tape"
-    />
-  );
-};
-
 // ============================================================================
-// NAVIGATORS
+// PIN SETUP SCREEN (uses your existing PINEntryScreen logic)
 // ============================================================================
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
-const Tab = createBottomTabNavigator<MainTabParamList>();
+const PINSetupScreen: React.FC = () => (
+  <PINEntryScreen
+    mode="setup"
+    onSuccess={() => {}}
+    title="Secure Your Story"
+    subtitle="Create a 6-digit PIN to protect your Life Tape"
+  />
+);
+
+// ============================================================================
+// NAVIGATION SETUP
+// ============================================================================
+
+const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
 
 const MainTabs: React.FC = () => {
   const { colors: themeColors } = useTheme();
@@ -843,7 +320,7 @@ const MainTabs: React.FC = () => {
           borderTopColor: themeColors.divider,
           borderTopWidth: 1,
           height: dimensions.tabBarHeight,
-          paddingBottom: Platform.OS === 'ios' ? spacing.lg : spacing.md,
+          paddingBottom: Platform.OS === "ios" ? spacing.lg : spacing.md,
           paddingTop: spacing.sm,
         },
         tabBarActiveTintColor: themeColors.tabActive,
@@ -855,27 +332,30 @@ const MainTabs: React.FC = () => {
         tabBarIcon: ({ focused, color }) => {
           let iconName: keyof typeof Ionicons.glyphMap;
 
-          if (route.name === 'Record') {
-            iconName = focused ? 'mic' : 'mic-outline';
-          } else if (route.name === 'Timeline') {
-            iconName = focused ? 'time' : 'time-outline';
-          } else {
-            iconName = focused ? 'menu' : 'menu-outline';
+          switch (route.name) {
+            case "Record":
+              iconName = focused ? "mic" : "mic-outline";
+              break;
+            case "Timeline":
+              iconName = focused ? "time" : "time-outline";
+              break;
+            default:
+              iconName = focused ? "menu" : "menu-outline";
           }
 
           return <Ionicons name={iconName} size={dimensions.tabIconSize} color={color} />;
         },
       })}
     >
-      <Tab.Screen name="Record" component={RecordScreen} options={{ tabBarLabel: 'Record' }} />
-      <Tab.Screen name="Timeline" component={TimelineScreen} options={{ tabBarLabel: 'Timeline' }} />
-      <Tab.Screen name="Menu" component={MenuScreen} options={{ tabBarLabel: 'Menu' }} />
+      <Tab.Screen name="Record" component={RecordScreen} />
+      <Tab.Screen name="Timeline" component={TimelineScreen} />
+      <Tab.Screen name="Menu" component={MenuScreen} />
     </Tab.Navigator>
   );
 };
 
 // ============================================================================
-// APP NAVIGATION WITH PIN GATE
+// APP NAVIGATION + PIN LOCK SYSTEM
 // ============================================================================
 
 const AppNavigation: React.FC = () => {
@@ -883,34 +363,36 @@ const AppNavigation: React.FC = () => {
   const { isAppUnlocked, hasAppPIN, lockApp, setLastBackgroundTime } = usePINStore();
   const { isOnboarded, hasCompletedTimeline } = useUserStore();
   const { loadEntries } = useAppStateStore();
+
   const [showPINEntry, setShowPINEntry] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Lock app on mount and load entries
+  // Lock app on mount + load saved entries
   useEffect(() => {
     lockApp();
     loadEntries();
     setIsInitialized(true);
   }, []);
 
-  // Handle app state changes (background/foreground)
+  // Lock when app goes background
   useEffect(() => {
-    const handleAppStateChange = (nextAppState: AppStateStatus) => {
-      if (nextAppState === 'background' || nextAppState === 'inactive') {
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "background") {
         setLastBackgroundTime(Date.now());
-      } else if (nextAppState === 'active') {
+      }
+
+      if (state === "active") {
         if (hasAppPIN() && isOnboarded) {
           lockApp();
           setShowPINEntry(true);
         }
       }
-    };
+    });
 
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-    return () => subscription?.remove();
+    return () => sub.remove();
   }, [hasAppPIN, isOnboarded, lockApp, setLastBackgroundTime]);
 
-  // Show PIN entry if needed
+  // Show PIN entry when needed
   useEffect(() => {
     if (isInitialized && hasAppPIN() && !isAppUnlocked && isOnboarded) {
       setShowPINEntry(true);
@@ -919,12 +401,14 @@ const AppNavigation: React.FC = () => {
     }
   }, [isInitialized, hasAppPIN, isAppUnlocked, isOnboarded]);
 
-  const getInitialRoute = (): keyof RootStackParamList => {
-    if (!isOnboarded) return 'Onboarding';
-    if (!hasCompletedTimeline) return 'TimelineBuilder';
-    return 'Main';
+  // Routing logic
+  const getInitialRoute = () => {
+    if (!isOnboarded) return "Onboarding";
+    if (!hasCompletedTimeline) return "TimelineBuilder";
+    return "Main";
   };
 
+  // PIN lock screen
   if (showPINEntry) {
     return (
       <PINEntryScreen
@@ -940,10 +424,7 @@ const AppNavigation: React.FC = () => {
     <NavigationContainer theme={isDark ? DarkNavigationTheme : LightNavigationTheme}>
       <Stack.Navigator
         initialRouteName={getInitialRoute()}
-        screenOptions={{
-          headerShown: false,
-          animation: 'fade',
-        }}
+        screenOptions={{ headerShown: false, animation: "fade" }}
       >
         <Stack.Screen name="Splash" component={SplashScreenComponent} />
         <Stack.Screen name="Onboarding" component={OnboardingScreen} />
@@ -951,11 +432,7 @@ const AppNavigation: React.FC = () => {
         <Stack.Screen name="TimelineBuilder" component={TimelineBuilderScreen} />
         <Stack.Screen name="PINSetup" component={PINSetupScreen} />
         <Stack.Screen name="Main" component={MainTabs} />
-        <Stack.Screen
-          name="DarkSide"
-          component={DarkSideScreen}
-          options={{ animation: 'slide_from_bottom' }}
-        />
+        <Stack.Screen name="DarkSide" component={DarkSideScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="TitlePreference" component={TitlePreferenceScreen} />
         <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
@@ -968,7 +445,6 @@ const AppNavigation: React.FC = () => {
     </NavigationContainer>
   );
 };
-
 // ============================================================================
 // STATUS BAR MANAGER
 // ============================================================================
@@ -978,7 +454,7 @@ const StatusBarManager: React.FC = () => {
 
   return (
     <StatusBar
-      barStyle={isDark ? 'light-content' : 'dark-content'}
+      barStyle={isDark ? "light-content" : "dark-content"}
       backgroundColor="transparent"
       translucent
     />
@@ -994,15 +470,16 @@ const App: React.FC = () => {
   const [appReady, setAppReady] = useState(false);
   const systemColorScheme = useColorScheme();
 
+  // Load Fonts
   useEffect(() => {
     const loadFonts = async () => {
       try {
         await Font.loadAsync({
-          Aniron: require('./assets/fonts/Aniron.ttf'),
+          Aniron: require("./assets/fonts/Aniron.ttf"),
         });
-        setFontsLoaded(true);
       } catch (error) {
-        console.error('Error loading Aniron:', error);
+        console.error("Error loading Aniron:", error);
+      } finally {
         setFontsLoaded(true);
       }
     };
@@ -1010,6 +487,7 @@ const App: React.FC = () => {
     loadFonts();
   }, []);
 
+  // Hide Splash When Ready
   useEffect(() => {
     const prepare = async () => {
       if (fontsLoaded) {
@@ -1021,15 +499,35 @@ const App: React.FC = () => {
     prepare();
   }, [fontsLoaded]);
 
+  // Initial 'loading' fallback screen
   if (!appReady) {
-    const bgColor = systemColorScheme === 'dark' ? colors.dark.canvas : colors.light.canvas;
-    const textColor = systemColorScheme === 'dark' ? colors.dark.textPrimary : colors.light.textPrimary;
-    const buttonColor = colors.light.buttonPrimary;
+    const bgColor =
+      systemColorScheme === "dark" ? colors.dark.canvas : colors.light.canvas;
+    const textColor =
+      systemColorScheme === "dark"
+        ? colors.dark.textPrimary
+        : colors.light.textPrimary;
 
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: bgColor }]}>
-        <ActivityIndicator size="large" color={buttonColor} />
-        <Text style={[styles.loadingText, { color: textColor }]}>Loading Life Tape...</Text>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: bgColor,
+        }}
+      >
+        <ActivityIndicator size="large" color={colors.light.buttonPrimary} />
+        <Text
+          style={{
+            color: textColor,
+            marginTop: spacing.lg,
+            fontFamily: typography.fonts.regular,
+            fontSize: typography.sizes.body,
+          }}
+        >
+          Loading Life Tape...
+        </Text>
       </View>
     );
   }
@@ -1048,56 +546,30 @@ const App: React.FC = () => {
 // STYLES
 // ============================================================================
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
 const KEYPAD_KEY_SIZE = Math.min(
   (SCREEN_WIDTH - spacing.xl * 2 - spacing.md * 2) / 3,
   dimensions.pinKeySize
 );
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: spacing.lg,
-    fontSize: typography.sizes.body,
-    fontFamily: typography.fonts.regular,
-  },
-  placeholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  placeholderText: {
-    fontSize: typography.sizes.h3,
-  },
-  pinContainer: {
-    flex: 1,
-  },
+  pinContainer: { flex: 1 },
   pinContent: {
     flex: 1,
     paddingHorizontal: spacing.xl,
-    alignItems: 'center',
+    alignItems: "center",
   },
-  pinHeader: {
-    alignItems: 'center',
-    marginBottom: spacing.xxxl,
-  },
-  pinTitle: {
-    fontSize: typography.sizes.h2,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-  },
+  pinHeader: { alignItems: "center", marginBottom: spacing.xxxl },
+  pinTitle: { fontSize: typography.sizes.h2, marginBottom: spacing.sm, textAlign: "center" },
   pinSubtitle: {
     fontSize: typography.sizes.body,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: typography.sizes.body * typography.lineHeights.relaxed,
   },
   pinDotsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginBottom: spacing.xl,
   },
   pinDot: {
@@ -1110,12 +582,12 @@ const styles = StyleSheet.create({
   pinError: {
     fontSize: typography.sizes.bodySmall,
     marginBottom: spacing.lg,
-    textAlign: 'center',
+    textAlign: "center",
   },
   keypadContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
     width: KEYPAD_KEY_SIZE * 3 + spacing.md * 2,
     marginTop: spacing.xl,
   },
@@ -1123,26 +595,19 @@ const styles = StyleSheet.create({
     width: KEYPAD_KEY_SIZE,
     height: KEYPAD_KEY_SIZE,
     borderRadius: KEYPAD_KEY_SIZE / 2,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     margin: spacing.xs,
     ...shadows.sm,
   },
-  keypadKeyText: {
-    fontSize: typography.sizes.h2,
-  },
+  keypadKeyText: { fontSize: typography.sizes.h2 },
   keypadEmptySpace: {
     width: KEYPAD_KEY_SIZE,
     height: KEYPAD_KEY_SIZE,
     margin: spacing.xs,
   },
-  pinCancelButton: {
-    marginTop: spacing.xxl,
-    padding: spacing.md,
-  },
-  pinCancelText: {
-    fontSize: typography.sizes.body,
-  },
+  pinCancelButton: { marginTop: spacing.xxl, padding: spacing.md },
+  pinCancelText: { fontSize: typography.sizes.body },
 });
 
 // ============================================================================
