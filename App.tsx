@@ -1,3 +1,7 @@
+console.log("Supabase URL:", Constants.expoConfig.extra.supabaseUrl);
+console.log("Supabase Key:", Constants.expoConfig.extra.supabaseAnonKey);
+
+
 /**
  * Life Tape - Root Application
  * Voice-first, hands-free autobiography app
