@@ -3,6 +3,10 @@ console.log("ENV CHECK:", {
   key: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
 });
 
+import Constants from "expo-constants";
+
+console.log("ENV CHECK:", Constants.expoConfig.extra);
+
 /**
  * Life Tape - Root Application
  * Voice-first, hands-free autobiography app
