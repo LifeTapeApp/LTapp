@@ -1,12 +1,3 @@
-console.log("ENV CHECK:", {
-  url: process.env.EXPO_PUBLIC_SUPABASE_URL,
-  key: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
-});
-
-import Constants from "expo-constants";
-
-console.log("ENV CHECK:", Constants.expoConfig.extra);
-
 /**
  * Life Tape - Root Application
  * Voice-first, hands-free autobiography app
@@ -36,8 +27,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { Ionicons } from '@expo/vector-icons';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { createClient } from '@supabase/supabase-js';
-
+import { supabase } from "./supabase";
 import {
   colors,
   typography,
@@ -51,15 +41,6 @@ import {
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
-
-// ============================================================================
-// SUPABASE CLIENT
-// ============================================================================
-
-const supabaseUrl = 'https://dmqkdjcbnurlfdnvyial.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRtcWtkamNibnVybGZkbnZ5aWFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzI3OTQ3NzgsImV4cCI6MjA0ODM3MDc3OH0.l8s3i5gM5b5u7v8w9x0y1z2A3B4C5D6E7F8G9H0I1J2K';
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // ============================================================================
 // SUPABASE STORAGE ADAPTER FOR ZUSTAND
