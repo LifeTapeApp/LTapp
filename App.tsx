@@ -26,7 +26,14 @@ import { Ionicons } from '@expo/vector-icons';
 // project imports (paths you confirmed)
 import { supabase } from './supabase';
 import { usePINStore, useUserStore, useAppStateStore } from './stores'; // index exports stores
-import { ThemeProvider as ExternalThemeProvider, colors as themeColorsTokens, typography, spacing, dimensions, radii, shadows } from './constants/theme';
+import {
+  colors as themeColorsTokens,
+  typography,
+  spacing,
+  dimensions,
+  radii,
+  shadows,
+} from './constants/theme';
 
 // screens (you confirmed these six exist)
 import RecordScreen from './screens/RecordScreen';
