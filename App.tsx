@@ -87,11 +87,12 @@ const AppThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const colors = isDark ? themeColorsTokens.dark : themeColorsTokens.light;
 
   return (
-    <InternalThemeContext.Provider value={{ colorMode, isDark, colors, setColorMode, toggleColorMode }}>
-      <ExternalThemeProvider>{children}</ExternalThemeProvider>
-    </InternalThemeContext.Provider>
-  );
-};
+  <InternalThemeContext.Provider
+    value={{ colorMode, isDark, colors, setColorMode, toggleColorMode }}
+  >
+    {children}
+  </InternalThemeContext.Provider>
+);
 
 // -----------------------------
 // Fonts to load (ensure files exist in ./assets/fonts)
