@@ -58,7 +58,7 @@ type SortType = 'newest' | 'oldest';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_MARGIN = spacing.md;
 // Dark Side color overrides
-const darkSideColors = {
+const getDarkSideColors = (isDark: boolean) => ({
   background: isDark ? '#0f0a1e' : '#1a0d33',
   canvas: isDark ? '#0f0a1e' : '#1a0d33',
   card: isDark ? '#1e1533' : '#2d1a4d',
@@ -68,7 +68,7 @@ const darkSideColors = {
   accent: '#7f5af0',
   tag: '#9d8cff',
   moonGlow: 'rgba(127, 90, 240, 0.3)',
-};
+});
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
