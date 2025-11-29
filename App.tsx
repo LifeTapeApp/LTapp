@@ -1,13 +1,73 @@
-import React from 'react';
-import { View } from 'react-native';
-import Constants from 'expo-constants';
+// -------------------------------------------------------------
+// DO NOT IMPORT ANYTHING BEFORE REACT (WEB BREAKS)
+// -------------------------------------------------------------
 
-// Debug only inside the component (after Expo initializes)
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  createContext,
+  useContext,
+  ReactNode
+} from "react";
+
+import {
+  View,
+  Text,
+  StyleSheet,
+  StatusBar,
+  ActivityIndicator,
+  useColorScheme,
+  TouchableOpacity,
+  Vibration,
+  Dimensions,
+  Platform,
+  AppState,
+  AppStateStatus,
+} from "react-native";
+
+import Constants from "expo-constants";
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { NavigationContainer, DefaultTheme, DarkTheme } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+
+import * as Font from "expo-font";
+import * as SplashScreen from "expo-splash-screen";
+import { Ionicons } from "@expo/vector-icons";
+
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+
+import { supabase } from "./supabase";
+import {
+  colors,
+  typography,
+  spacing,
+  radii,
+  shadows,
+  dimensions,
+  animations,
+  zIndex,
+} from "./constants/theme";
+
+// -------------------------------------------------------------
+// DEBUG ENV (SAFE VERSION — DOES NOT RUN UNTIL APP IS MOUNTED)
+// -------------------------------------------------------------
 function DebugEnv() {
-  console.log("Supabase URL:", Constants.expoConfig?.extra?.supabaseUrl);
-  console.log("Supabase Key:", Constants.expoConfig?.extra?.supabaseAnonKey);
+  useEffect(() => {
+    console.log("Supabase URL:", Constants.expoConfig?.extra?.supabaseUrl);
+    console.log("Supabase Key:", Constants.expoConfig?.extra?.supabaseAnonKey);
+  }, []);
+
   return null;
 }
+
+// -------------------------------------------------------------
+// Prevent splash auto-hide
+// -------------------------------------------------------------
+SplashScreen.preventAutoHideAsync();
 
 /**
  * Life Tape - Root Application
