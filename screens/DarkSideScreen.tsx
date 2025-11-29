@@ -5,38 +5,29 @@ Private entries visible only after PIN verification
 Purple-themed timeline for sensitive/private recordings
 */
 
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import {
-View,
-Text,
-StyleSheet,
-FlatList,
-TouchableOpacity,
-Animated,
-RefreshControl,
-TextInput,
-Dimensions,
-Platform,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
-import { useTheme } from "../theme/theme";
-import { useAppStateStore } from "../stores/appStateStore";
-import { usePINStore } from "../stores/pinStore";
-import { RootStackParamList } from "../types/navigation";
-import PINEntryScreen from "../screens/PINEntryScreen";
+
+// UPDATED IMPORTS
+import { useTheme } from '../theme/useTheme';
+import useAppStateStore from '../stores/appStateStore';
+
 import {
-colors,
-typography,
-spacing,
-radii,
-shadows,
-dimensions,
-animations,
+  colors,
+  typography,
+  spacing,
+  radii,
+  shadows,
 } from '../constants/theme';
+
 // ============================================================================
 // TYPES
 // ============================================================================
