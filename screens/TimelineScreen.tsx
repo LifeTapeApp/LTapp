@@ -6,32 +6,37 @@ Displays all entries in chronological order with filtering by tags
 
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import {
-View,
-Text,
-StyleSheet,
-FlatList,
-TouchableOpacity,
-Animated,
-RefreshControl,
-TextInput,
-Dimensions,
-Platform,
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Animated,
+  RefreshControl,
+  TextInput,
+  Dimensions,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useTheme, useAppStateStore, RootStackParamList } from '../App';
+
+// UPDATED IMPORTS
+import { useTheme } from '../theme/useTheme';
+import useAppStateStore from '../stores/appStateStore';
+import { RootStackParamList } from '../navigation/types';
+
 import {
-colors,
-typography,
-spacing,
-radii,
-shadows,
-dimensions,
-animations,
+  colors,
+  typography,
+  spacing,
+  radii,
+  shadows,
+  dimensions,
+  animations,
 } from '../constants/theme';
+
 // ============================================================================
 // TYPES
 // ============================================================================
