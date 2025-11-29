@@ -23,7 +23,11 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useTheme, useAppStateStore, usePINStore, RootStackParamList, PINEntryScreen } from '../App';
+import { useTheme } from "../theme/theme";
+import { useAppStateStore } from "../stores/appStateStore";
+import { usePINStore } from "../stores/pinStore";
+import { RootStackParamList } from "../types/navigation";
+import PINEntryScreen from "../screens/PINEntryScreen";
 import {
 colors,
 typography,
