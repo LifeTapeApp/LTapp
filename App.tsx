@@ -1,4 +1,4 @@
-// App.tsx
+// App.tsx - chunk 1/5
 import React, {
   useEffect,
   useState,
@@ -30,16 +30,13 @@ import * as Font from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { Ionicons } from '@expo/vector-icons';
 
-// supabase client (file you already set up)
+// app client & stores (ensure these files export the names used)
 import { supabase } from './supabase';
-
-// Stores (you extracted these)
-// Make sure these paths match where you placed them.
 import { usePINStore } from './stores/pinStore';
 import { useUserStore } from './stores/userStore';
 import { useAppStateStore } from './stores/appStateStore';
 
-// Theme constants from your theme.ts
+// theme constants
 import {
   colors,
   typography,
@@ -51,25 +48,22 @@ import {
   zIndex,
 } from './constants/theme';
 
-// Prevent the splash screen from auto-hiding until we're ready
+// real screens
+import RecordScreen from './screens/RecordScreen';
+import TimelineScreen from './screens/TimelineScreen';
+import MenuScreen from './screens/MenuScreen';
+import DarkSideScreen from './screens/DarkSideScreen';
+import EntryDetailScreen from './screens/EntryDetailScreen';
+
+// Prevent splash from auto-hiding until fonts & init done
 SplashScreen.preventAutoHideAsync();
 
 // -----------------------------
-// Font loading mapping (SF Pro Text files you confirmed)
+// Fonts loader (SF Pro Text mapping confirmed)
 // -----------------------------
-// Files expected in ./assets/fonts:
-// SF-Pro-Text-Regular.otf
-// SF-Pro-Text-Medium.otf
-// SF-Pro-Text-Semibold.otf
-// SF-Pro-Text-Bold.otf
-// SF-Pro-Text-Light.otf
-// SF-Pro-Text-Thin.otf
-// SF-Pro-Text-Black.otf
-//
-// These map to the family names used in your theme.
 const loadAppFonts = async () =>
   Font.loadAsync({
-    'Aniron': require('./assets/fonts/Aniron.ttf'), // keep logo font if you still use it
+    Aniron: require('./assets/fonts/Aniron.ttf'),
     'SF Pro Text': require('./assets/fonts/SF-Pro-Text-Regular.otf'),
     'SF Pro Text Medium': require('./assets/fonts/SF-Pro-Text-Medium.otf'),
     'SF Pro Text Semibold': require('./assets/fonts/SF-Pro-Text-Semibold.otf'),
@@ -80,86 +74,68 @@ const loadAppFonts = async () =>
   });
 
 // -----------------------------
-// Small debug helper (optional)
+// Debug helper (safe, optional)
 // -----------------------------
 function DebugEnv() {
-  // Safe: reading Constants only inside a component / runtime
-  // will not crash bundler when Constants is not available during server-side build.
-  // Keep this in temporarily to confirm environment values in Vercel/EAS.
-  // Remove when you no longer need to debug env.
   useEffect(() => {
-    // Only log in dev builds
     if (__DEV__) {
       console.log('Supabase URL:', Constants.expoConfig?.extra?.supabaseUrl ?? process.env.EXPO_PUBLIC_SUPABASE_URL);
-      console.log('Supabase Key:', Constants.expoConfig?.extra?.supabaseAnonKey ?? process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY);
+      console.log('Supabase Key present?', Boolean(Constants.expoConfig?.extra?.supabaseAnonKey ?? process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY));
     }
   }, []);
   return null;
 }
 
 // -----------------------------
-// Types & helpers
+// Theme context provider
 // -----------------------------
 type ColorMode = 'light' | 'dark' | 'system';
-
-// -----------------------------
-// ThemeContext (keeps your theme/provider logic local & straightforward)
-// -----------------------------
 interface ThemeContextType {
   colorMode: ColorMode;
   isDark: boolean;
   colors: typeof colors.light | typeof colors.dark;
-  setColorMode: (mode: ColorMode) => void;
+  setColorMode: (m: ColorMode) => void;
   toggleColorMode: () => void;
 }
-
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const useTheme = (): ThemeContextType => {
-  const context = useContext(ThemeContext);
-  if (!context) throw new Error('useTheme must be used within ThemeProvider');
-  return context;
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error('useTheme must be used within ThemeProvider');
+  return ctx;
 };
 
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const systemColorScheme = useColorScheme();
+  const system = useColorScheme();
   const [colorMode, setColorModeState] = useState<ColorMode>('system');
 
   useEffect(() => {
-    // You might want to load saved color mode from persistent storage (Zustand or supabaseStorage).
-    // If you've stored that elsewhere, keep that logic outside this provider and call setColorModeState accordingly.
+    // If you persist color mode in store, load here and setColorModeState.
   }, []);
 
-  const setColorMode = useCallback(async (mode: ColorMode) => {
+  const setColorMode = useCallback((mode: ColorMode) => {
     setColorModeState(mode);
-    // persist if needed
+    // persist if desired
   }, []);
 
   const toggleColorMode = useCallback(() => {
     const next = colorMode === 'light' ? 'dark' : colorMode === 'dark' ? 'system' : 'light';
-    setColorMode(next);
-  }, [colorMode, setColorMode]);
+    setColorModeState(next);
+  }, [colorMode]);
 
-  const isDark = colorMode === 'system' ? systemColorScheme === 'dark' : colorMode === 'dark';
+  const isDark = colorMode === 'system' ? system === 'dark' : colorMode === 'dark';
   const currentColors = isDark ? colors.dark : colors.light;
 
   return (
-    <ThemeContext.Provider
-      value={{
-        colorMode,
-        isDark,
-        colors: currentColors,
-        setColorMode,
-        toggleColorMode,
-      }}
-    >
+    <ThemeContext.Provider value={{ colorMode, isDark, colors: currentColors, setColorMode, toggleColorMode }}>
       {children}
     </ThemeContext.Provider>
   );
 };
+// App.tsx - chunk 2/5
 
 // -----------------------------
-// PIN Entry component (kept inlined for simplicity)
+// PIN entry component (keeps your existing logic)
 // -----------------------------
 interface PINEntryScreenProps {
   mode: 'app' | 'darkSide' | 'setup' | 'darkSideSetup';
@@ -169,13 +145,7 @@ interface PINEntryScreenProps {
   subtitle?: string;
 }
 
-export const PINEntryScreen: React.FC<PINEntryScreenProps> = ({
-  mode,
-  onSuccess,
-  onCancel,
-  title,
-  subtitle,
-}) => {
+export const PINEntryScreen: React.FC<PINEntryScreenProps> = ({ mode, onSuccess, onCancel, title, subtitle }) => {
   const { colors: themeColors } = useTheme();
   const insets = useSafeAreaInsets();
   const [pin, setPin] = useState('');
@@ -183,72 +153,52 @@ export const PINEntryScreen: React.FC<PINEntryScreenProps> = ({
   const [isConfirming, setIsConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Use your extracted stores
-  const { verifyAppPIN, verifyDarkSidePIN, setAppPIN, setDarkSidePIN, unlockApp, unlockDarkSide } = usePINStore();
+  const {
+    verifyAppPIN,
+    verifyDarkSidePIN,
+    setAppPIN,
+    setDarkSidePIN,
+    unlockApp,
+    unlockDarkSide,
+  } = usePINStore();
 
   const isSetup = mode === 'setup' || mode === 'darkSideSetup';
   const maxLength = 6;
 
-  const displayTitle =
-    title ||
-    (isSetup ? (mode === 'setup' ? 'Create Your PIN' : 'Create Dark Side PIN') : mode === 'app' ? 'Enter Your PIN' : 'Enter Dark Side PIN');
+  const displayTitle = title || (isSetup ? (mode === 'setup' ? 'Create Your PIN' : 'Create Dark Side PIN') : mode === 'app' ? 'Enter Your PIN' : 'Enter Dark Side PIN');
+  const displaySubtitle = subtitle || (isSetup ? (isConfirming ? 'Confirm your 6-digit PIN' : 'Enter a 6-digit PIN to secure your Life Tape') : 'Enter your 6-digit PIN to continue');
 
-  const displaySubtitle =
-    subtitle || (isSetup ? (isConfirming ? 'Confirm your 6-digit PIN' : 'Enter a 6-digit PIN to secure your Life Tape') : 'Enter your 6-digit PIN to continue');
-
-  const handleKeyPress = useCallback(
-    (key: string) => {
-      Vibration.vibrate(10);
-      setError(null);
-
-      if (key === 'delete') {
-        if (isConfirming) setConfirmPin((p) => p.slice(0, -1));
-        else setPin((p) => p.slice(0, -1));
-        return;
-      }
-
-      const currentPin = isConfirming ? confirmPin : pin;
-      if (currentPin.length >= maxLength) return;
-
-      const next = currentPin + key;
-
-      if (isConfirming) {
-        setConfirmPin(next);
-        if (next.length === maxLength) {
-          if (next === pin) {
-            if (mode === 'setup') {
-              setAppPIN(next);
-              unlockApp();
-            } else {
-              setDarkSidePIN(next);
-              unlockDarkSide();
-            }
-            onSuccess();
-          } else {
-            setError('PINs do not match. Try again.');
-            setConfirmPin('');
-            Vibration.vibrate([0, 50, 50]);
-          }
-        }
-      } else {
-        setPin(next);
-        if (isSetup && next.length === maxLength) setIsConfirming(true);
-
-        if (!isSetup && next.length === maxLength) {
-          const isValid = mode === 'app' ? verifyAppPIN(next) : verifyDarkSidePIN(next);
-          if (isValid) {
-            mode === 'app' ? unlockApp() : unlockDarkSide();
-            onSuccess();
-          } else {
-            setError('Incorrect PIN. Try again.');
-            setPin('');
-            Vibration.vibrate([0, 50, 50]);
-          }
+  const handleKeyPress = useCallback((key: string) => {
+    Vibration.vibrate(10);
+    setError(null);
+    if (key === 'delete') {
+      if (isConfirming) setConfirmPin((p) => p.slice(0, -1));
+      else setPin((p) => p.slice(0, -1));
+      return;
+    }
+    const current = isConfirming ? confirmPin : pin;
+    if (current.length >= maxLength) return;
+    const next = current + key;
+    if (isConfirming) {
+      setConfirmPin(next);
+      if (next.length === maxLength) {
+        if (next === pin) {
+          if (mode === 'setup') { setAppPIN(next); unlockApp(); } else { setDarkSidePIN(next); unlockDarkSide(); }
+          onSuccess();
+        } else {
+          setError('PINs do not match. Try again.'); setConfirmPin(''); Vibration.vibrate([0, 50, 50]);
         }
       }
-    },
-    [pin, confirmPin, isConfirming, isSetup, mode, verifyAppPIN, verifyDarkSidePIN, setAppPIN, setDarkSidePIN, unlockApp, unlockDarkSide, onSuccess]
-  );
+    } else {
+      setPin(next);
+      if (isSetup && next.length === maxLength) setIsConfirming(true);
+      if (!isSetup && next.length === maxLength) {
+        const valid = mode === 'app' ? verifyAppPIN(next) : verifyDarkSidePIN(next);
+        if (valid) { if (mode === 'app') unlockApp(); else unlockDarkSide(); onSuccess(); }
+        else { setError('Incorrect PIN. Try again.'); setPin(''); Vibration.vibrate([0, 50, 50]); }
+      }
+    }
+  }, [pin, confirmPin, isConfirming, isSetup, mode, verifyAppPIN, verifyDarkSidePIN, setAppPIN, setDarkSidePIN, unlockApp, unlockDarkSide, onSuccess]);
 
   const currentPin = isConfirming ? confirmPin : pin;
   const keypadNumbers = ['1','2','3','4','5','6','7','8','9','','0','delete'];
@@ -263,86 +213,28 @@ export const PINEntryScreen: React.FC<PINEntryScreenProps> = ({
 
         <View style={styles.pinDotsContainer}>
           {Array.from({ length: maxLength }).map((_, i) => (
-            <View
-              key={i}
-              style={[
-                styles.pinDot,
-                {
-                  backgroundColor: i < currentPin.length ? themeColors.buttonPrimary : 'transparent',
-                  borderColor: i < currentPin.length ? themeColors.buttonPrimary : themeColors.border,
-                },
-              ]}
-            />
+            <View key={i} style={[styles.pinDot, { backgroundColor: i < currentPin.length ? themeColors.buttonPrimary : 'transparent', borderColor: i < currentPin.length ? themeColors.buttonPrimary : themeColors.border }]} />
           ))}
         </View>
 
         {error && <Text style={[styles.pinError, { color: themeColors.error, fontFamily: typography.fonts.medium }]}>{error}</Text>}
 
         <View style={styles.keypadContainer}>
-          {keypadNumbers.map((k, idx) =>
-            k === '' ? <View key={idx} style={styles.keypadEmptySpace} /> : (
-              <TouchableOpacity
-                key={idx}
-                style={[styles.keypadKey, { backgroundColor: themeColors.card }]}
-                onPress={() => handleKeyPress(k)}
-                activeOpacity={0.75}
-              >
-                {k === 'delete' ? (
-                  <Ionicons name="backspace-outline" size={28} color={themeColors.textPrimary} />
-                ) : (
-                  <Text style={[styles.keypadKeyText, { color: themeColors.textPrimary, fontFamily: typography.fonts.medium }]}>{k}</Text>
-                )}
-              </TouchableOpacity>
-            )
-          )}
+          {keypadNumbers.map((k, idx) => k === '' ? <View key={idx} style={styles.keypadEmptySpace} /> : (
+            <TouchableOpacity key={idx} style={[styles.keypadKey, { backgroundColor: themeColors.card }]} onPress={() => handleKeyPress(k)} activeOpacity={0.75}>
+              {k === 'delete' ? <Ionicons name="backspace-outline" size={28} color={themeColors.textPrimary} /> : <Text style={[styles.keypadKeyText, { color: themeColors.textPrimary, fontFamily: typography.fonts.medium }]}>{k}</Text>}
+            </TouchableOpacity>
+          ))}
         </View>
 
-        {onCancel && (
-          <TouchableOpacity style={styles.pinCancelButton} onPress={onCancel}>
-            <Text style={[styles.pinCancelText, { color: themeColors.buttonPrimary, fontFamily: typography.fonts.medium }]}>Cancel</Text>
-          </TouchableOpacity>
-        )}
+        {onCancel && <TouchableOpacity style={styles.pinCancelButton} onPress={onCancel}><Text style={[styles.pinCancelText, { color: themeColors.buttonPrimary, fontFamily: typography.fonts.medium }]}>Cancel</Text></TouchableOpacity>}
       </View>
     </SafeAreaView>
   );
 };
 
 // -----------------------------
-// Placeholder screens (keeps navigation working while you develop actual screens)
-// Replace these with imports from ./screens/* when ready
-// -----------------------------
-const PlaceholderScreen: React.FC<{ name: string }> = ({ name }) => {
-  const { colors: themeColors } = useTheme();
-  return (
-    <SafeAreaView style={[styles.placeholder, { backgroundColor: themeColors.canvas }]}>
-      <Text style={[styles.placeholderText, { color: themeColors.textPrimary, fontFamily: typography.fonts.medium }]}>{name}</Text>
-    </SafeAreaView>
-  );
-};
-
-// If you already have real screen files, import them instead.
-// Example:
-// import RecordScreen from './screens/RecordScreen';
-const SplashScreenComponent = () => <PlaceholderScreen name="Life Tape" />;
-const OnboardingScreen = () => <PlaceholderScreen name="Onboarding" />;
-const AccountCreationScreen = () => <PlaceholderScreen name="Account Creation" />;
-const TimelineBuilderScreen = () => <PlaceholderScreen name="Timeline Builder" />;
-// If you DO have real screens, replace these placeholders:
-const RecordScreen = () => <PlaceholderScreen name="Record" />;
-const TimelineScreen = () => <PlaceholderScreen name="Timeline" />;
-const MenuScreen = () => <PlaceholderScreen name="Menu" />;
-const DarkSideScreen = () => <PlaceholderScreen name="Dark Side" />;
-const SettingsScreen = () => <PlaceholderScreen name="Settings" />;
-const TitlePreferenceScreen = () => <PlaceholderScreen name="Title Preference" />;
-const ChangePasswordScreen = () => <PlaceholderScreen name="Change Password" />;
-const PrivacySecurityScreen = () => <PlaceholderScreen name="Privacy & Security" />;
-const ContactScreen = () => <PlaceholderScreen name="Contact" />;
-const SendInviteScreen = () => <PlaceholderScreen name="Send Invite" />;
-const DownloadStoryScreen = () => <PlaceholderScreen name="Download Story" />;
-const EntryDetailScreen = () => <PlaceholderScreen name="Entry Detail" />;
-
-// -----------------------------
-// Navigation setup
+// Navigation types & MainTabs
 // -----------------------------
 export type RootStackParamList = {
   Splash: undefined;
@@ -362,12 +254,7 @@ export type RootStackParamList = {
   DownloadStory: undefined;
   EntryDetail: { entryId: string };
 };
-
-export type MainTabParamList = {
-  Record: undefined;
-  Timeline: undefined;
-  Menu: undefined;
-};
+export type MainTabParamList = { Record: undefined; Timeline: undefined; Menu: undefined; };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -389,12 +276,9 @@ const MainTabs: React.FC = () => {
         },
         tabBarActiveTintColor: themeColors.tabActive,
         tabBarInactiveTintColor: themeColors.inactive,
-        tabBarLabelStyle: {
-          fontFamily: typography.fonts.medium,
-          fontSize: typography.sizes.tab,
-        },
+        tabBarLabelStyle: { fontFamily: typography.fonts.medium, fontSize: typography.sizes.tab },
         tabBarIcon: ({ focused, color }) => {
-          let iconName: keyof typeof Ionicons.glyphMap;
+          let iconName: keyof typeof Ionicons.glyphMap = 'menu';
           if (route.name === 'Record') iconName = focused ? 'mic' : 'mic-outline';
           else if (route.name === 'Timeline') iconName = focused ? 'time' : 'time-outline';
           else iconName = focused ? 'menu' : 'menu-outline';
@@ -408,10 +292,35 @@ const MainTabs: React.FC = () => {
     </Tab.Navigator>
   );
 };
+// App.tsx - chunk 3/5
 
-// -----------------------------
-// App navigation with PIN gating logic
-// -----------------------------
+// Navigation theme objects (light/dark)
+const LightNavigationTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: colors.light.buttonPrimary,
+    background: colors.light.canvas,
+    card: colors.light.card,
+    text: colors.light.textPrimary,
+    border: colors.light.border,
+    notification: colors.light.accent,
+  },
+};
+const DarkNavigationTheme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    primary: colors.dark.buttonPrimary,
+    background: colors.dark.canvas,
+    card: colors.dark.card,
+    text: colors.dark.textPrimary,
+    border: colors.dark.border,
+    notification: colors.dark.accent,
+  },
+};
+
+// App navigation with PIN gating and initial load
 const AppNavigation: React.FC = () => {
   const { isDark } = useTheme();
   const { isAppUnlocked, hasAppPIN, lockApp, setLastBackgroundTime } = usePINStore();
@@ -421,9 +330,8 @@ const AppNavigation: React.FC = () => {
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    // on mount: lock app and load entries
+    // initial lock & load
     lockApp();
-    // loadEntries might be a no-op until you implement real loading
     loadEntries?.();
     setIsInitialized(true);
   }, []);
@@ -439,7 +347,6 @@ const AppNavigation: React.FC = () => {
         }
       }
     };
-
     const sub = AppState.addEventListener('change', handleAppStateChange);
     return () => sub.remove();
   }, [hasAppPIN, isOnboarded, lockApp, setLastBackgroundTime]);
@@ -462,71 +369,39 @@ const AppNavigation: React.FC = () => {
   return (
     <NavigationContainer theme={isDark ? DarkNavigationTheme : LightNavigationTheme}>
       <Stack.Navigator initialRouteName={getInitialRoute()} screenOptions={{ headerShown: false, animation: 'fade' }}>
-        <Stack.Screen name="Splash" component={SplashScreenComponent} />
-        <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-        <Stack.Screen name="AccountCreation" component={AccountCreationScreen} />
-        <Stack.Screen name="TimelineBuilder" component={TimelineBuilderScreen} />
+        <Stack.Screen name="Splash" component={() => <SafeAreaView style={{flex:1,justifyContent:'center',alignItems:'center'}}><Text>Life Tape</Text></SafeAreaView>} />
+        <Stack.Screen name="Onboarding" component={() => <SafeAreaView style={{flex:1,justifyContent:'center',alignItems:'center'}}><Text>Onboarding</Text></SafeAreaView>} />
+        <Stack.Screen name="AccountCreation" component={() => <SafeAreaView style={{flex:1,justifyContent:'center',alignItems:'center'}}><Text>Account Creation</Text></SafeAreaView>} />
+        <Stack.Screen name="TimelineBuilder" component={() => <SafeAreaView style={{flex:1,justifyContent:'center',alignItems:'center'}}><Text>Timeline Builder</Text></SafeAreaView>} />
         <Stack.Screen name="PINSetup" component={() => <PINEntryScreen mode="setup" onSuccess={() => {}} />} />
         <Stack.Screen name="Main" component={MainTabs} />
         <Stack.Screen name="DarkSide" component={DarkSideScreen} options={{ animation: 'slide_from_bottom' }} />
-        <Stack.Screen name="Settings" component={SettingsScreen} />
-        <Stack.Screen name="TitlePreference" component={TitlePreferenceScreen} />
-        <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
-        <Stack.Screen name="PrivacySecurity" component={PrivacySecurityScreen} />
-        <Stack.Screen name="Contact" component={ContactScreen} />
-        <Stack.Screen name="SendInvite" component={SendInviteScreen} />
-        <Stack.Screen name="DownloadStory" component={DownloadStoryScreen} />
+        <Stack.Screen name="Settings" component={() => <SafeAreaView style={{flex:1,justifyContent:'center',alignItems:'center'}}><Text>Settings</Text></SafeAreaView>} />
+        <Stack.Screen name="TitlePreference" component={() => <SafeAreaView style={{flex:1,justifyContent:'center',alignItems:'center'}}><Text>Title Preference</Text></SafeAreaView>} />
+        <Stack.Screen name="ChangePassword" component={() => <SafeAreaView style={{flex:1,justifyContent:'center',alignItems:'center'}}><Text>Change Password</Text></SafeAreaView>} />
+        <Stack.Screen name="PrivacySecurity" component={() => <SafeAreaView style={{flex:1,justifyContent:'center',alignItems:'center'}}><Text>Privacy & Security</Text></SafeAreaView>} />
+        <Stack.Screen name="Contact" component={() => <SafeAreaView style={{flex:1,justifyContent:'center',alignItems:'center'}}><Text>Contact</Text></SafeAreaView>} />
+        <Stack.Screen name="SendInvite" component={() => <SafeAreaView style={{flex:1,justifyContent:'center',alignItems:'center'}}><Text>Send Invite</Text></SafeAreaView>} />
+        <Stack.Screen name="DownloadStory" component={() => <SafeAreaView style={{flex:1,justifyContent:'center',alignItems:'center'}}><Text>Download Story</Text></SafeAreaView>} />
         <Stack.Screen name="EntryDetail" component={EntryDetailScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
 };
 
-// Navigation themes
-const LightNavigationTheme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    primary: colors.light.buttonPrimary,
-    background: colors.light.canvas,
-    card: colors.light.card,
-    text: colors.light.textPrimary,
-    border: colors.light.border,
-    notification: colors.light.accent,
-  },
-};
-
-const DarkNavigationTheme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    primary: colors.dark.buttonPrimary,
-    background: colors.dark.canvas,
-    card: colors.dark.card,
-    text: colors.dark.textPrimary,
-    border: colors.dark.border,
-    notification: colors.dark.accent,
-  },
-};
-
-// -----------------------------
-// StatusBar manager
-// -----------------------------
+// Status bar manager
 const StatusBarManager: React.FC = () => {
   const { isDark } = useTheme();
   return <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />;
 };
+// App.tsx - chunk 4/5
 
-// -----------------------------
-// Root App component
-// -----------------------------
 const App: React.FC = () => {
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [appReady, setAppReady] = useState(false);
   const systemColorScheme = useColorScheme();
 
   useEffect(() => {
-    // load fonts
     (async () => {
       try {
         await loadAppFonts();
@@ -542,11 +417,7 @@ const App: React.FC = () => {
     (async () => {
       if (fontsLoaded) {
         setAppReady(true);
-        try {
-          await SplashScreen.hideAsync();
-        } catch (err) {
-          // ignore if splash already hidden
-        }
+        try { await SplashScreen.hideAsync(); } catch (e) {}
       }
     })();
   }, [fontsLoaded]);
@@ -575,9 +446,7 @@ const App: React.FC = () => {
   );
 };
 
-// -----------------------------
-// Styles
-// -----------------------------
+// Styles (kept from your original, trimmed where possible)
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const KEYPAD_KEY_SIZE = Math.min((SCREEN_WIDTH - spacing.xl * 2 - spacing.md * 2) / 3, dimensions.pinKeySize);
 
@@ -602,8 +471,5 @@ const styles = StyleSheet.create({
   pinCancelText: { fontSize: typography.sizes.body },
 });
 
-// -----------------------------
-// Exports
-// -----------------------------
 export { supabase };
 export default App;
