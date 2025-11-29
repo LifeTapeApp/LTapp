@@ -1,3 +1,8 @@
+console.log("ENV CHECK:", {
+  url: process.env.EXPO_PUBLIC_SUPABASE_URL,
+  key: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+});
+
 /**
  * Life Tape - Root Application
  * Voice-first, hands-free autobiography app
