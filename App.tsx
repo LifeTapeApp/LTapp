@@ -1,22 +1,20 @@
-import Constants from 'expo-constants';
 import React from 'react';
 import { View } from 'react-native';
+import Constants from 'expo-constants';
 
-console.log("Supabase URL:", Constants.expoConfig?.extra?.supabaseUrl);
-console.log("Supabase Key:", Constants.expoConfig?.extra?.supabaseAnonKey);
-
-// ... your app component
-
-
+// Debug only inside the component (after Expo initializes)
+function DebugEnv() {
+  console.log("Supabase URL:", Constants.expoConfig?.extra?.supabaseUrl);
+  console.log("Supabase Key:", Constants.expoConfig?.extra?.supabaseAnonKey);
+  return null;
+}
 
 /**
  * Life Tape - Root Application
  * Voice-first, hands-free autobiography app
  */
 
-import React, { useEffect, useState, useCallback, createContext, useContext, ReactNode } from 'react';
 import {
-  View,
   Text,
   StyleSheet,
   StatusBar,
@@ -29,17 +27,19 @@ import {
   AppState,
   AppStateStatus,
 } from 'react-native';
-import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+
 import * as Font from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { Ionicons } from '@expo/vector-icons';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import Constants from 'expo-constants';
-import { supabase } from "./supabase";
+
+import { supabase } from './supabase';
 import {
   colors,
   typography,
