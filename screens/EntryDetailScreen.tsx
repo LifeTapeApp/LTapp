@@ -4,39 +4,29 @@ Life Tape - Entry Detail Screen
 Full view of a single entry with playback, editing, and deletion
 */
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import {
-View,
-Text,
-StyleSheet,
-ScrollView,
-TouchableOpacity,
-TextInput,
-Alert,
-Animated,
-Dimensions,
-Platform,
-Share,
-KeyboardAvoidingView,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { Audio, AVPlaybackStatus } from 'expo-av';
-import * as Haptics from 'expo-haptics';
-import { useTheme } from "../theme/theme";
-import { useAppStateStore } from "../stores/appStateStore";
-import { RootStackParamList } from "../types/navigation";
+
+// UPDATED IMPORTS
+import { useTheme } from '../theme/useTheme';
+import useAppStateStore from '../stores/appStateStore';
+
 import {
-colors,
-typography,
-spacing,
-radii,
-shadows,
-dimensions,
-animations,
+  colors,
+  typography,
+  spacing,
+  radii,
+  shadows,
 } from '../constants/theme';
+
 // ============================================================================
 // TYPES
 // ============================================================================
