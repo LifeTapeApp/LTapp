@@ -19,8 +19,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
 
-import { useTheme } from '../App';
-import { useAppStateStore, DARK_SIDE_TRIGGERS } from '../App';
+// UPDATED IMPORTS
+import { useTheme } from '../theme/useTheme';
+import useAppStateStore, { DARK_SIDE_TRIGGERS } from '../stores/appStateStore';
+
 import {
   colors,
   typography,
@@ -30,6 +32,7 @@ import {
   dimensions,
   animations,
 } from '../constants/theme';
+
 
 // ============================================================================
 // TYPES & CONSTANTS
