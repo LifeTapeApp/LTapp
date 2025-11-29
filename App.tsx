@@ -1,5 +1,12 @@
-console.log("Supabase URL:", Constants.expoConfig.extra.supabaseUrl);
-console.log("Supabase Key:", Constants.expoConfig.extra.supabaseAnonKey);
+import Constants from 'expo-constants';
+import React from 'react';
+import { View } from 'react-native';
+
+console.log("Supabase URL:", Constants.expoConfig?.extra?.supabaseUrl);
+console.log("Supabase Key:", Constants.expoConfig?.extra?.supabaseAnonKey);
+
+// ... your app component
+
 
 
 /**
