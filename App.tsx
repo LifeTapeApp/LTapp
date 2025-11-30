@@ -377,77 +377,6 @@ export const useAppStateStore = create<AppStateStore>()(
 );
 
 // ============================================================================
-// Theme provider (local/simple). Swap with your project's ThemeProvider if you already made one
-// ============================================================================
-
-type ThemeContextType = {
-  colorMode: ColorMode;
-  isDark: boolean;
-  colors: typeof colors.light | typeof colors.dark;
-  setColorMode: (mode: ColorMode) => void;
-  toggleColorMode: () => void;
-};
-
-const InternalThemeContext = createContext<ThemeContextType | undefined>(undefined);
-
-export const useTheme = (): ThemeContextType => {
-  const ctx = useContext(InternalThemeContext);
-  if (!ctx) throw new Error('useTheme must be used within ThemeProvider');
-  return ctx;
-};
-
-const InternalThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const systemColorScheme = useColorScheme();
-  const [colorMode, setColorModeState] = useState<ColorMode>('system');
-
-  useEffect(() => {
-    // load from supabaseStorage optionally
-    (async () => {
-      try {
-        const stored = await supabaseStorage.getItem('life-tape-color-mode');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (['light', 'dark', 'system'].includes(parsed)) {
-            setColorModeState(parsed);
-          }
-        }
-      } catch (e) {
-        // ignore
-      }
-    })();
-  }, []);
-
-  const setColorMode = useCallback(async (mode: ColorMode) => {
-    setColorModeState(mode);
-    try {
-      await supabaseStorage.setItem('life-tape-color-mode', JSON.stringify(mode));
-    } catch (e) {
-      console.error('save color mode error', e);
-    }
-  }, []);
-
-  const toggleColorMode = useCallback(() => {
-    const next = colorMode === 'light' ? 'dark' : colorMode === 'dark' ? 'system' : 'light';
-    setColorModeState(next);
-  }, [colorMode]);
-
-  const isDark = colorMode === 'system' ? systemColorScheme === 'dark' : colorMode === 'dark';
-  const currentColors = isDark ? colors.dark : colors.light;
-
-  const value: ThemeContextType = {
-    colorMode,
-    isDark,
-    colors: currentColors,
-    setColorMode,
-    toggleColorMode,
-  };
-
-  return <InternalThemeContext.Provider value={value}>{children}</InternalThemeContext.Provider>;
-};
-
-// TODO: if you already exported a ThemeProvider from ./constants/theme, import & use it instead of InternalThemeProvider.
-
-// ============================================================================
 // NAVIGATION types and dark-theme wrappers
 // ============================================================================
 
@@ -725,10 +654,10 @@ const App: React.FC = () => {
 
   return (
     <SafeAreaProvider>
-      <InternalThemeProvider>
+      <ThemeProvider>
         <StatusBarManager />
         <AppNavigation />
-      </InternalThemeProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 };
